@@ -1,7 +1,5 @@
 # Katabump Server Auto-Renewal Tool
 
-[English Version](README_EN.md) | [中文说明](README.md)
-
 这是一个用于自动续期 Katabump 服务器的自动化脚本。它利用 Playwright 和 CDP (Chrome DevTools Protocol) 技术来模拟用户操作，能够有效绕过 Cloudflare Turnstile 验证码，确保持续的服务器服务。
 
 支持 **Windows 本地运行** 和 **GitHub Actions 云端运行**。
