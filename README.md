@@ -1,5 +1,6 @@
 # Katabump Server Auto-Renewal Tool
 
+基于[XCQ0607/katabump](https://github.com/XCQ0607/katabump)优化：增加singbox全协议代理、随机时间签到
 
 
 ## 🚀 GitHub Actions 云端运行 (推荐)
