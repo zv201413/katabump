@@ -2,68 +2,60 @@ name: Katabump Auto Renew
 
 on:
   schedule:
-  # 每天 UTC 0点 (北京时间 8点) 运行
-  - cron: '0 0 * * *'
+  - cron: '0 2 */3 * *'  # 每天 UTC 0点 (北京时间 8点) 运行,根据服务到期时间自行修改
   workflow_dispatch: # 允许手动触发
 
 jobs:
-  renew:
+  Renew-Katabump:
     runs-on: ubuntu-latest
-
+    permissions:
+      actions: write  
+      contents: read
+    
     steps:
-    - uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - uses: actions/checkout@v6
+    - name: ⚙ 设置 Python
+      uses: actions/setup-python@v6
       with:
-        node-version: '20'
+        python-version: '3.12'
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Start Proxy (sing-box)
-      env:
-        PROXY_URL: ${{ secrets.PROXY_URL }}
-      run: |
-        if [ -z "$PROXY_URL" ]; then
-          echo "PROXY_URL not set, skipping sing-box setup."
-          exit 0
-        fi
-        SINGBOX_VER="1.11.0"
-        echo "Downloading sing-box v${SINGBOX_VER}..."
-        wget -q "https://github.com/SagerNet/sing-box/releases/download/v${SINGBOX_VER}/sing-box-${SINGBOX_VER}-linux-amd64.tar.gz"
-        tar -xzf "sing-box-${SINGBOX_VER}-linux-amd64.tar.gz"
-        mv "sing-box-${SINGBOX_VER}-linux-amd64/sing-box" ./sing-box
-        chmod +x ./sing-box
-        echo "Generating sing-box config from PROXY_URL..."
-        python proxy_handler.py
-        echo "Starting sing-box..."
-        nohup ./sing-box run -c config.json > singbox.log 2>&1 &
-        sleep 3
-        echo "sing-box started. PROXY_URL will be passed to action_renew.js."
-
-    - name: Install Dependencies
+    - name: 🛠️ 安装系统依赖和python依赖
       run: |
         sudo apt-get update
-        sudo apt-get install -y xvfb
-        npm install
-        npx playwright install-deps chrome
+        sudo apt-get install -y xvfb x11-utils xdotool scrot fonts-noto-cjk
+        pip install seleniumbase requests
+        seleniumbase install chromedriver
 
-    - name: Run Renew Script
+    - name: ⚙ 设置代理 (sing-box)
+      continue-on-error: true
       env:
+        NODE_LINK: ${{ secrets.NODE_LINK }}
+      run: |
+        bash <(wget -qO- https://main.ssss.nyc.mn/setup_proxy.sh)
+
+    - name: 🚀 运行续期脚本
+      env:
+        KATABUMP_EMAIL: ${{ secrets.KATABUMP_EMAIL }}
+        KATABUMP_PASSWORD: ${{ secrets.KATABUMP_PASSWORD }}
         USERS_JSON: ${{ secrets.USERS_JSON }}
         HTTP_PROXY: ${{ secrets.HTTP_PROXY }}
-        PROXY_URL: ${{ secrets.PROXY_URL }}
         TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
         TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
-        GITHUB_EVENT_NAME: ${{ github.event_name }}
-      run: xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" node action_renew.js
-
-    - name: Upload Screenshots
+      run: |
+        xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
+          python3 app.py
+        
+    - name: 🧹 清理旧的工作流运行记录
       if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: screenshots
-        path: screenshots/
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        runs=$(gh run list --workflow="${{ github.workflow }}" --limit=100 --json databaseId --jq '.[].databaseId')
+        count=0
+        for run_id in $runs; do
+          count=$((count + 1))
+          if [ $count -gt 1 ]; then
+            echo "删除运行记录: $run_id"
+            gh run delete $run_id || true
+          fi
+        done
