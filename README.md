@@ -47,3 +47,8 @@
 ### 注意事项
 - 尽量添加一个干净的节点，以免过不了cf盾
 - cron时间根据自己的服务到期时间的前一天来修改
+
+━━━━━━━━━━━━━━━━━━━━━━
+## 🙏 鸣谢
+
+- 过盾与续期方案参考自 [eooce/katabump-renew](https://github.com/eooce/katabump-renew)，感谢原作者 [eooce](https://github.com/eooce) 的分享与维护。
