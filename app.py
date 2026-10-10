@@ -386,8 +386,8 @@ def _goto_server_detail(sb) -> bool:
     # 检查页面顶部是否已有"还无法续期"全局提示
     alert_text = _read_alert(sb)
     if alert_text and "can't renew" in alert_text.lower():
-        print(f"ℹ️  页面顶部提示: {alert_text}")
-        send_tg_message("ℹ️", "⚠️ 未到续期时间", alert_text)
+        # 每天监测,未到续期窗口是常态;仅打印不推送 TG,避免每天刷屏
+        print(f"ℹ️  未到续期时间,页面顶部提示: {alert_text}")
         return False
 
     # 多种选择器尝试查找 See 链接
@@ -609,7 +609,8 @@ def _check_renew_result(sb):
         print(f"📩 页面提示: {alert_text}")
         low = alert_text.lower()
         if "can't renew" in low or "unable" in low:
-            send_tg_message("⏳", "未到续期时间", alert_text)
+            # 未到续期窗口:每天监测会频繁命中,仅打印不推送 TG,避免刷屏
+            print("ℹ️ 未到续期时间,跳过 TG 推送")
         elif any(kw in low for kw in ( "renewed", "success", "extended")):
             send_tg_message("✅", "续期成功", alert_text)
         else:
